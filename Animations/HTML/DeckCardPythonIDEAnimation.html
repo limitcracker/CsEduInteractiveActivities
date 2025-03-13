@@ -1,14 +1,49 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Card Game with Python IDE</title>
-    <!-- Add Prism.js for syntax highlighting -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css" rel="stylesheet" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-python.min.js"></script>
-</head>
-<body>
 <div id="card-game">
+    <script>
+        // Dynamically load required CDN resources
+        function loadResource(type, url) {
+            return new Promise((resolve, reject) => {
+                let element;
+                if (type === 'style') {
+                    element = document.createElement('link');
+                    element.rel = 'stylesheet';
+                    element.href = url;
+                } else if (type === 'script') {
+                    element = document.createElement('script');
+                    element.src = url;
+                }
+                element.onload = () => resolve();
+                element.onerror = () => reject();
+                document.head.appendChild(element);
+            });
+        }
+
+        // Load all required resources
+        Promise.all([
+            loadResource('style', 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css'),
+            loadResource('script', 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js')
+        ]).then(() => {
+            // Load Python language support after Prism core is loaded
+            loadResource('script', 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-python.min.js')
+                .then(() => {
+                    // Initialize syntax highlighting once everything is loaded
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', initializeEditor);
+                    } else {
+                        initializeEditor();
+                    }
+                });
+        }).catch(error => {
+            console.error('Failed to load resources:', error);
+        });
+
+        function initializeEditor() {
+            const pythonCode = document.getElementById('pythonCode');
+            if (pythonCode && window.Prism) {
+                Prism.highlightElement(pythonCode);
+            }
+        }
+    </script>
     <style>
         * {
             margin: 0;
@@ -148,6 +183,11 @@
             height: 180px;
             perspective: 1000px;
             cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
         }
 
         .card-inner {
@@ -155,7 +195,7 @@
             width: 100%;
             height: 100%;
             text-align: center;
-            transition: transform 0.6s;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
             transform-style: preserve-3d;
         }
 
@@ -172,15 +212,64 @@
             align-items: center;
             justify-content: center;
             font-size: 2.5rem;
-            border-radius: 10px;
-            background: white;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            border: 2px solid #ddd;
+            border-radius: 15px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            border: none;
+            overflow: hidden;
+        }
+
+        .card-front {
+            background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+            color: white;
+            border: 4px solid white;
+        }
+
+        .card-front::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, 
+                rgba(255,255,255,0.1) 0%, 
+                rgba(255,255,255,0.2) 50%, 
+                rgba(255,255,255,0.1) 100%);
+            z-index: 1;
         }
 
         .card-back {
-            background: #fff;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
             transform: rotateY(180deg);
+            color: #2193b0;
+            font-weight: bold;
+            border: 4px solid #2193b0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-back::after {
+            content: '';
+            position: absolute;
+            width: 150%;
+            height: 150%;
+            background: linear-gradient(45deg, 
+                rgba(33, 147, 176, 0.1) 0%, 
+                rgba(109, 213, 237, 0.1) 100%);
+            transform: rotate(45deg);
+            top: -25%;
+            left: -25%;
+            pointer-events: none;
+        }
+
+        @keyframes cardHover {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+            100% { transform: translateY(0); }
+        }
+
+        .card:hover .card-inner {
+            animation: cardHover 1s infinite;
         }
 
         .play-again {
@@ -496,11 +585,6 @@
             // Allow new game to start
             canPlay = true;
         }
-
-        // Initialize syntax highlighting
-        document.addEventListener('DOMContentLoaded', function() {
-            Prism.highlightElement(document.getElementById('pythonCode'));
-        });
     </script>
     <div class="container">
         <div class="game-section">
@@ -556,6 +640,3 @@
         </div>
     </div>
 </div>
-
-</body>
-</html>
