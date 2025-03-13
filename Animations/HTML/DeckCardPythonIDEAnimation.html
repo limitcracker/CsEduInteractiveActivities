@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Card Game with Python IDE</title>
+    <!-- Add Prism.js for syntax highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-python.min.js"></script>
+</head>
+<body>
+<div id="card-game">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            max-width: 1200px;
+            width: 100%;
+            align-items: center;
+        }
+        .game-section, .ide-section {
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+        }
+        .game-area {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        .ide-section {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        .editor-info {
+            text-align: left;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: #e3f2fd;
+            border-radius: 10px;
+            border-left: 4px solid #1976d2;
+        }
+        .editor-container {
+            background: #1e1e1e;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            text-align: left;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            color: #fff;
+            overflow: auto;
+        }
+        .editor-container pre {
+            margin: 0 !important;
+            padding: 0 !important;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.5;
+            tab-size: 4;
+            white-space: pre-wrap;
+            background: transparent !important;
+            border: none !important;
+        }
+        .editor-container code {
+            font-family: 'Consolas', 'Monaco', monospace !important;
+            background: transparent !important;
+            text-shadow: none !important;
+            padding: 0 !important;
+            color: #fff;
+            outline: none !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+        .editor-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
+        }
+        .example-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .run-code {
+            padding: 0.75rem 1.5rem;
+            font-size: 1.1rem;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            width: 200px;
+        }
+        .example-btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .message {
+            font-size: 1.75rem;
+            margin: 1.5rem 0;
+            min-height: 2rem;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        .cards {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            margin: 2rem 0;
+        }
+
+        .card {
+            width: 120px;
+            height: 180px;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            border-radius: 10px;
+            background: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border: 2px solid #ddd;
+        }
+
+        .card-back {
+            background: #fff;
+            transform: rotateY(180deg);
+        }
+
+        .play-again {
+            padding: 0.75rem 1.5rem;
+            font-size: 1.1rem;
+            background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .play-again:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Python Syntax Highlighting */
+        .token.comment { color: #6A9955; }
+        .token.string { color: #CE9178; }
+        .token.number { color: #B5CEA8; }
+        .token.keyword { color: #569CD6; }
+        .token.function { color: #DCDCAA; }
+        .token.operator { color: #D4D4D4; }
+        .token.boolean { color: #569CD6; }
+        .token.punctuation { color: #D4D4D4; }
+
+        /* Remove Prism.js default styles that might cause issues */
+        .token {
+            background: none !important;
+            text-shadow: none !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        pre[class*="language-"], 
+        code[class*="language-"] {
+            text-shadow: none !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: transparent !important;
+        }
+
+        /* Ensure the editor is properly editable */
+        [contenteditable="true"] {
+            outline: none !important;
+            caret-color: #fff;
+        }
+
+        [contenteditable="true"]:focus {
+            outline: none !important;
+            box-shadow: none !important;
+            border: none !important;
+        }
+    </style>
+    <script>
+        let playerCard, computerCard;
+        let canPlay = true;
+
+        // Example code templates with educational comments
+        const examples = {
+            higher: `def check_winner(player_card, computer_card):
+            # Higher card wins (traditional rules)
+            # Cards: A(1) < 2 < 3 ... < 10 < J(11) < Q(12) < K(13)
+            
+            if player_card > computer_card:
+                return "You win! 🎉"
+            if player_card < computer_card:
+                return "You lose! 😢"
+            return "It's a draw! 🤝"`,
+            
+            lower: `def check_winner(player_card, computer_card):
+            # Lower card wins (reverse rules)
+            # Cards: K(13) < Q(12) < J(11) < 10 ... < 2 < A(1)
+            
+            if player_card < computer_card:
+                return "You win! 🎉"
+            if player_card > computer_card:
+                return "You lose! 😢"
+            return "It's a draw! 🤝"`,
+            
+            ace: `def check_winner(player_card, computer_card):
+            # Special Ace rules:
+            # 1. Ace (1) beats everything except 2
+            # 2. For other cards, higher number wins
+            
+            if player_card == 1:
+                if computer_card != 2:
+                    return "You win with an Ace! 🎉"
+                return "You lose! The 2 beats your Ace! 😢"
+            
+            if computer_card == 1:
+                if player_card != 2:
+                    return "You lose! Computer's Ace wins! 😢"
+                return "You win! Your 2 beats the Ace! 🎉"
+            
+            if player_card > computer_card:
+                return "You win! 🎉"
+            if player_card < computer_card:
+                return "You lose! 😢"
+            return "It's a draw! 🤝"`
+        };
+
+        // Load example code
+        function loadExample(type) {
+            const editor = document.getElementById('pythonCode');
+            editor.textContent = examples[type];
+            Prism.highlightElement(editor);
+            updateGameLogic();
+        }
+
+        // Function to evaluate game result using the Python-like code
+        function evaluateGame(player_card, computer_card) {
+            const editor = document.getElementById('pythonCode');
+            const pythonCode = editor.textContent || editor.innerText;
+            
+            try {
+                // Clean up the code - remove extra whitespace and normalize line endings
+                const cleanCode = pythonCode.replace(/\r\n/g, '\n').trim();
+                
+                // First check if the code has the required function
+                if (!cleanCode.includes('def check_winner')) {
+                    throw new Error('Your code must include a function named "check_winner"');
+                }
+
+                // Split into lines for processing
+                const lines = cleanCode.split('\n');
+                let processedLines = [];
+                let insideFunction = false;
+                let hasReturn = false;
+                let indentLevel = 0;
+
+                for (let i = 0; i < lines.length; i++) {
+                    let line = lines[i];
+                    let trimmedLine = line.trim();
+                    
+                    // Skip empty lines
+                    if (!trimmedLine) continue;
+                    
+                    // Handle function definition
+                    if (trimmedLine.startsWith('def check_winner')) {
+                        insideFunction = true;
+                        processedLines.push('function check_winner(player_card, computer_card) {');
+                        indentLevel = line.length - line.trimLeft().length;
+                        continue;
+                    }
+
+                    // Process function body
+                    if (insideFunction) {
+                        // Check indentation
+                        const currentIndent = line.length - line.trimLeft().length;
+                        if (currentIndent <= indentLevel && trimmedLine.length > 0) {
+                            insideFunction = false;
+                            continue;
+                        }
+
+                        // Skip empty lines and comments
+                        if (!trimmedLine || trimmedLine.startsWith('#')) {
+                            continue;
+                        }
+
+                        // Track return statements
+                        if (trimmedLine.startsWith('return')) {
+                            hasReturn = true;
+                        }
+
+                        // Convert Python to JavaScript syntax
+                        line = line
+                            .replace(/and/g, '&&')
+                            .replace(/or/g, '||')
+                            .replace(/not/g, '!')
+                            .replace(/==/g, '===')
+                            .replace(/!=/g, '!==');
+
+                        // Handle if statements
+                        if (trimmedLine.startsWith('if ')) {
+                            line = line.replace(/if (.+):/, 'if ($1) {');
+                        } else if (trimmedLine.startsWith('elif ')) {
+                            line = line.replace(/elif (.+):/, 'else if ($1) {');
+                        } else if (trimmedLine === 'else:') {
+                            line = line.replace('else:', 'else {');
+                        }
+
+                        // Add closing braces for blocks
+                        if (i < lines.length - 1) {
+                            const nextLine = lines[i + 1];
+                            if (nextLine && nextLine.trim() && (nextLine.length - nextLine.trimLeft().length) <= currentIndent) {
+                                line += ' }';
+                            }
+                        }
+
+                        processedLines.push(line);
+                    }
+                }
+
+                // Add final closing brace
+                processedLines.push('}');
+
+                if (!hasReturn) {
+                    throw new Error('Your function must include at least one return statement');
+                }
+
+                // Create the final JavaScript code
+                const jsCode = processedLines.join('\n');
+
+                // Create and execute the function
+                let gameFunction;
+                try {
+                    gameFunction = new Function(`
+                        ${jsCode}
+                        return check_winner(${player_card}, ${computer_card});
+                    `);
+                } catch (e) {
+                    throw new Error('Syntax error in your code. Check your indentation and brackets.');
+                }
+
+                const result = gameFunction();
+                if (typeof result !== 'string') {
+                    throw new Error('Your function must return a text message (like "You win!" or "You lose!")');
+                }
+                return result;
+            } catch (error) {
+                throw new Error('🐍 Python Error: ' + error.message);
+            }
+        }
+
+        // Function to update game logic
+        function updateGameLogic() {
+            const messageElement = document.getElementById('message');
+            try {
+                // Test the logic with sample values
+                evaluateGame(1, 2);
+                messageElement.textContent = 'Game logic updated successfully! Start a new game.';
+                messageElement.style.color = '#4CAF50';
+                setTimeout(() => {
+                    if (!playerCard) {
+                        messageElement.textContent = '';
+                    }
+                }, 2000);
+                // Highlight the code after updating
+                Prism.highlightElement(document.getElementById('pythonCode'));
+            } catch (error) {
+                messageElement.textContent = error.message;
+                messageElement.style.color = '#f44336';
+            }
+        }
+
+        // Generate a random card number between 1 and 13
+        function getRandomCard() {
+            return Math.floor(Math.random() * 13) + 1;
+        }
+
+        // Convert number to card display
+        function getCardDisplay(number) {
+            if (number === 1) return 'A';
+            if (number === 11) return 'J';
+            if (number === 12) return 'Q';
+            if (number === 13) return 'K';
+            return number.toString();
+        }
+
+        function resetGame() {
+            playerCard = null;
+            computerCard = null;
+            canPlay = true;
+            
+            // Reset card displays
+            document.querySelector('.player-card').classList.remove('flipped');
+            document.querySelector('.computer-card').classList.remove('flipped');
+            
+            // Reset message
+            document.getElementById('message').textContent = '';
+            
+            // Hide play again button
+            document.getElementById('playAgain').style.display = 'none';
+        }
+
+        function playerTurn() {
+            if (!canPlay) return;
+            
+            playerCard = getRandomCard();
+            const playerCardElement = document.querySelector('.player-card');
+            playerCardElement.classList.add('flipped');
+            playerCardElement.querySelector('.card-back').textContent = getCardDisplay(playerCard);
+            
+            // Disable further clicks until computer's turn is complete
+            canPlay = false;
+            
+            // Computer's turn after a short delay
+            setTimeout(computerTurn, 1000);
+        }
+
+        function computerTurn() {
+            computerCard = getRandomCard();
+            const computerCardElement = document.querySelector('.computer-card');
+            computerCardElement.classList.add('flipped');
+            computerCardElement.querySelector('.card-back').textContent = getCardDisplay(computerCard);
+            
+            // Evaluate the game result
+            try {
+                const result = evaluateGame(playerCard, computerCard);
+                const messageElement = document.getElementById('message');
+                messageElement.textContent = result;
+                messageElement.style.color = result.includes('win') ? '#4CAF50' : result.includes('lose') ? '#f44336' : '#2196f3';
+                document.getElementById('playAgain').style.display = 'block';
+            } catch (error) {
+                document.getElementById('message').textContent = error.message;
+            }
+            
+            // Allow new game to start
+            canPlay = true;
+        }
+
+        // Initialize syntax highlighting
+        document.addEventListener('DOMContentLoaded', function() {
+            Prism.highlightElement(document.getElementById('pythonCode'));
+        });
+    </script>
+    <div class="container">
+        <div class="game-section">
+            <h1>Card Game</h1>
+            <div class="game-area">
+                <div class="cards">
+                    <div class="card player-card" onclick="playerTurn()">
+                        <div class="card-inner">
+                            <div class="card-front">🎴</div>
+                            <div class="card-back"></div>
+                        </div>
+                    </div>
+                    <div class="card computer-card">
+                        <div class="card-inner">
+                            <div class="card-front">🎴</div>
+                            <div class="card-back"></div>
+                        </div>
+                    </div>
+                </div>
+                <div id="message" class="message"></div>
+                <button id="playAgain" class="play-again" onclick="resetGame()">Play Again</button>
+            </div>
+        </div>
+        <div class="ide-section">
+            <h2>Python Game Logic</h2>
+            <div class="editor-info">
+                <p>Write your game logic in Python! Use these variables:</p>
+                <ul>
+                    <li><code>player_card</code>: Your card (1-13)</li>
+                    <li><code>computer_card</code>: Computer's card (1-13)</li>
+                    <li>1 = Ace, 11 = Jack, 12 = Queen, 13 = King</li>
+                </ul>
+            </div>
+            <div class="editor-container">
+                <pre><code class="language-python" id="pythonCode" contenteditable="true" spellcheck="false">def check_winner(player_card, computer_card):
+    # Write your game logic here!
+    # Compare player_card with computer_card
+    
+    if player_card > computer_card:
+        return "You win! 🎉"
+    if player_card < computer_card:
+        return "You lose! 😢"
+    return "It's a draw! 🤝"</code></pre>
+            </div>
+            <div class="editor-controls">
+                <button onclick="updateGameLogic()" class="run-code">Run Code</button>
+                <div class="example-buttons">
+                    <button onclick="loadExample('higher')" class="example-btn">Example: Higher Wins</button>
+                    <button onclick="loadExample('lower')" class="example-btn">Example: Lower Wins</button>
+                    <button onclick="loadExample('ace')" class="example-btn">Example: Ace Rules</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
