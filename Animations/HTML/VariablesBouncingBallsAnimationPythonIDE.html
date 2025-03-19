@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Python Learning Framework</title>
+    
+    <!-- Load dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/brython/3.10.5/brython.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/brython/3.10.5/brython_stdlib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .visualization, .editor-section {
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        #canvas-container {
+            width: 400px;
+            height: 400px;
+            margin: 0 auto;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        canvas {
+            border-radius: 4px;
+        }
+        .editor-container {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .CodeMirror {
+            height: 300px;
+            font-size: 14px;
+        }
+        .button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        #run-code {
+            background: #4CAF50;
+            color: white;
+        }
+        #reset-code {
+            background: #f44336;
+            color: white;
+        }
+        .message {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .message-success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        .message-error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .console {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            height: 100px;
+            overflow-y: auto;
+            font-family: monospace;
+        }
+        .console-info {
+            color: #1976d2;
+        }
+        .console-success {
+            color: #2e7d32;
+        }
+        .console-error {
+            color: #c62828;
+        }
+    </style>
+</head>
+<body onload="brython({debug: 1})">
+    <div class="container">
+        <div class="header">
+            <h1>Python Learning Framework</h1>
+            <p>Learn programming concepts through interactive visualization</p>
+        </div>
+        
+        <div class="content">
+            <div class="visualization">
+                <h2>Interactive Visualization</h2>
+                <div id="canvas-container">
+                    <canvas id="animation-canvas" width="400" height="400"></canvas>
+                </div>
+                <div class="console" id="output-console"></div>
+            </div>
+            
+            <div class="editor-section">
+                <h2>Python Code Editor</h2>
+                <div class="editor-container">
+                    <textarea id="code-editor"></textarea>
+                </div>
+                <div class="controls">
+                    <button id="run-code" class="button">▶ Run Code</button>
+                    <button id="reset-code" class="button">↺ Reset</button>
+                </div>
+                <div id="message" class="message"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/python">
+from browser import document, window, html, timer
+import math
+import random
+
+# Global state
+width = 400
+height = 400
+shapes = []
+window.shapes = shapes
+animation_frame = None
+
+# Get canvas context
+canvas = document['animation-canvas']
+ctx = canvas.getContext('2d')
+
+class Shape:
+    def __init__(self, x=200, y=200, size=30, color="blue"):
+        self.x = x
+        self.y = y
+        self.size = size
+        self.color = color
+        self.speed_x = 0
+        self.speed_y = 0
+        
+    def update(self):
+        # Update position with larger values for visible movement
+        self.x += self.speed_x
+        self.y += self.speed_y
+        
+        # Add gravity (increased for more visible effect)
+        self.speed_y += 0.5
+        
+        # Bounce off walls with less energy loss
+        bounce_damping = 0.8
+        
+        if self.x - self.size/2 < 0:
+            self.x = self.size/2
+            self.speed_x = abs(self.speed_x) * bounce_damping
+        elif self.x + self.size/2 > width:
+            self.x = width - self.size/2
+            self.speed_x = -abs(self.speed_x) * bounce_damping
+            
+        if self.y - self.size/2 < 0:
+            self.y = self.size/2
+            self.speed_y = abs(self.speed_y) * bounce_damping
+        elif self.y + self.size/2 > height:
+            self.y = height - self.size/2
+            self.speed_y = -abs(self.speed_y) * bounce_damping
+    
+    def draw(self):
+        ctx.fillStyle = self.color
+        ctx.beginPath()
+        ctx.arc(self.x, self.y, self.size/2, 0, 2 * math.pi)
+        ctx.fill()
+
+def draw_circle(x, y, size, color):
+    shapes.append(Shape(x, y, size, color))
+
+def animation_loop(*args):
+    global animation_frame
+    # Clear canvas
+    ctx.fillStyle = '#F0F0F0'
+    ctx.fillRect(0, 0, width, height)
+    
+    # Update and draw shapes
+    for shape in shapes:
+        shape.update()
+        shape.draw()
+    
+    # Request next frame
+    animation_frame = timer.request_animation_frame(animation_loop)
+
+def init_framework():
+    global editor
+    
+    # Initialize CodeMirror
+    editor = window.CodeMirror.fromTextArea(
+        document.getElementById("code-editor"),
+        {
+            'mode': 'python',
+            'theme': 'monokai',
+            'lineNumbers': True,
+            'tabSize': 4,
+            'indentUnit': 4,
+            'indentWithTabs': False,
+            'autofocus': True
+        }
+    )
+    
+    def log_to_console(message, type="info"):
+        console = document.getElementById("output-console")
+        line = document.createElement('div')
+        line.classList.add(f'console-{type}')
+        line.textContent = message
+        console.appendChild(line)
+        console.scrollTop = console.scrollHeight
+    
+    def run_code(evt):
+        try:
+            # Clear existing shapes and console
+            shapes.clear()
+            console = document.getElementById("output-console")
+            console.innerHTML = ""
+            
+            # Stop previous animation if running
+            if animation_frame:
+                timer.cancel_animation_frame(animation_frame)
+            
+            # Create namespace with available functions and print
+            def print_override(*args):
+                log_to_console(" ".join(str(arg) for arg in args))
+            
+            namespace = {
+                'width': width,
+                'height': height,
+                'draw_circle': draw_circle,
+                'Shape': Shape,
+                'shapes': shapes,
+                'print': print_override,
+                'random': random
+            }
+            
+            # Execute user code
+            code = editor.getValue()
+            exec(code, namespace)
+            
+            # Start animation loop immediately
+            animation_loop()
+            
+            # Show success message
+            msg = document['message']
+            msg.innerHTML = "Code executed successfully!"
+            msg.className = "message message-success"
+            log_to_console("Program running successfully!", "success")
+            
+        except Exception as e:
+            # Show error message
+            msg = document['message']
+            msg.innerHTML = f"Error: {str(e)}"
+            msg.className = "message message-error"
+            log_to_console(f"Error: {str(e)}", "error")
+            window.console.log(f"Error: {str(e)}")
+    
+    def reset_code(evt):
+        # Stop animation
+        if animation_frame:
+            timer.cancel_animation_frame(animation_frame)
+        
+        # Clear shapes and messages
+        shapes.clear()
+        document['message'].innerHTML = ""
+        document.getElementById("output-console").innerHTML = ""
+        
+        # Clear canvas
+        ctx.fillStyle = '#F0F0F0'
+        ctx.fillRect(0, 0, width, height)
+    
+    # Bind event handlers
+    document['run-code'].bind('click', run_code)
+    document['reset-code'].bind('click', reset_code)
+    
+    # Set initial example code with higher speeds
+    editor.setValue('''# Animation Example with Gravity!
+# Create a bouncing ball
+ball = Shape(200, 50, 30, "red")     # Start near top
+ball.speed_x = 5                      # Move right faster
+ball.speed_y = 0                      # Will fall with gravity
+shapes.append(ball)                   # Add to animation
+
+# Create another bouncing ball
+ball2 = Shape(100, 100, 20, "blue")  # Different position
+ball2.speed_x = -4                   # Move left faster
+ball2.speed_y = -8                   # Move up initially
+shapes.append(ball2)                 # Add to animation''')
+    
+    print("Framework initialized successfully!")
+    log_to_console("Framework ready! Click Run to start the animation.", "success")
+
+# Initialize framework when document is ready
+init_framework()
+    </script>
+</body>
+</html>
