@@ -2,327 +2,540 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Python Learning Framework</title>
+    <title>Heart Animation Widget</title>
     
     <!-- Load dependencies -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/brython/3.10.5/brython.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/brython/3.10.5/brython_stdlib.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/brython/3.10.5/brython.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/brython/3.10.5/brython_stdlib.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
     
-    <style>
-        body {
-            margin: 0;
-            padding: 20px;
-            font-family: Arial, sans-serif;
-            background: #f0f0f0;
+    <script>
+    // Widget initialization function with dependency checks
+    function initBrythonHeartWidget(containerId) {
+        const MAX_RETRIES = 10;
+        const RETRY_DELAY = 100;
+        let retryCount = 0;
+        
+        function checkDependencies() {
+            console.log('Checking dependencies...');
+            
+            if (!window.brython) {
+                console.error('Brython not loaded');
+                return false;
+            }
+            
+            if (!window.CodeMirror) {
+                console.error('CodeMirror not loaded');
+                return false;
+            }
+            
+            const container = document.getElementById(containerId);
+            if (!container) {
+                console.error('Container not found:', containerId);
+                return false;
+            }
+            
+            return true;
         }
-        .container {
+        
+        function initializeWidget() {
+            console.log('Initializing widget...');
+            
+            // Initialize Brython
+            brython({debug: 1});
+            
+            // Initialize CodeMirror after a short delay
+            setTimeout(() => {
+                const textarea = document.getElementById('code-editor');
+                if (textarea) {
+                    window.editor = CodeMirror.fromTextArea(textarea, {
+                        mode: 'python',
+                        theme: 'monokai',
+                        lineNumbers: true,
+                        indentUnit: 4,
+                        tabSize: 4,
+                        lineWrapping: true,
+                        viewportMargin: Infinity,
+                        extraKeys: {
+                            "Tab": function(cm) {
+                                cm.replaceSelection("    ");
+                            }
+                        }
+                    });
+                    
+                    window.editor.setValue(`# Try changing the heart's HP!
+# HP starts at 100 and can't go below 0 or above 100
+
+# Generate random damage
+damage = random.randint(1, 50)
+print(f"Dealing {damage} damage!")
+
+# Update HP
+hp = hp - damage
+print(f"HP is now {hp}")
+`);
+                    
+                    window.editor.refresh();
+                }
+            }, 100);
+        }
+        
+        function tryInitialize() {
+            if (checkDependencies()) {
+                initializeWidget();
+            } else if (retryCount < MAX_RETRIES) {
+                retryCount++;
+                console.log(`Retrying initialization (${retryCount}/${MAX_RETRIES})...`);
+                setTimeout(tryInitialize, RETRY_DELAY);
+            } else {
+                console.error('Failed to initialize widget after maximum retries');
+            }
+        }
+        
+        // Start initialization process
+        if (document.readyState === 'complete') {
+            tryInitialize();
+        } else {
+            window.addEventListener('load', tryInitialize);
+        }
+    }
+    
+    // Initialize widget when page loads
+    window.addEventListener('load', function() {
+        console.log('Window loaded, initializing widget...');
+        initBrythonHeartWidget('heart-widget-container');
+    });
+    </script>
+    
+    <style>
+        .brython-heart-widget {
+            width: 100%;
             max-width: 1200px;
             margin: 0 auto;
-            background: white;
             padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-family: Arial, sans-serif;
+            box-sizing: border-box;
         }
-        .header {
+        
+        .brython-heart-widget * {
+            box-sizing: border-box;
+        }
+        
+        .brython-heart-widget .container {
+            width: 100%;
+        }
+        
+        .brython-heart-widget .header {
             text-align: center;
-            margin-bottom: 20px;
-        }
-        .content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-        .visualization, .editor-section {
+            margin-bottom: 30px;
             padding: 20px;
-            background: #fff;
+            background: #f8f9fa;
             border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-        #canvas-container {
+        
+        .brython-heart-widget .content {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            width: 100%;
+            min-height: 500px;
+        }
+        
+        .brython-heart-widget .visualization {
+            flex: 1;
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 0;
+        }
+        
+        .brython-heart-widget #canvas-container {
             width: 400px;
             height: 400px;
             margin: 0 auto;
-            background: #fff;
-            border: 1px solid #ddd;
+            position: relative;
+            background: white;
+            border: 1px solid #ccc;
             border-radius: 4px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        canvas {
+        
+        .brython-heart-widget #animation-canvas {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            display: block;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+        }
+        
+        .brython-heart-widget .console {
+            width: 100%;
+            height: 150px;
+            margin-top: 20px;
+            padding: 10px;
+            background: #2d2d2d;
+            color: white;
+            font-family: monospace;
+            overflow-y: auto;
             border-radius: 4px;
-        }
-        .editor-container {
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            margin-bottom: 10px;
-        }
-        .CodeMirror {
-            height: 300px;
             font-size: 14px;
+            line-height: 1.4;
         }
-        .button {
-            padding: 8px 16px;
+        
+        .brython-heart-widget .console-info {
+            color: #58a6ff;
+            margin: 4px 0;
+        }
+        
+        .brython-heart-widget .console-error {
+            color: #f85149;
+            margin: 4px 0;
+        }
+        
+        .brython-heart-widget .console-success {
+            color: #56d364;
+            margin: 4px 0;
+        }
+        
+        .brython-heart-widget .editor-section {
+            flex: 1;
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            color: white;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .brython-heart-widget .editor-container {
+            flex: 1;
+            margin-top: 10px;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid #444;
+        }
+        
+        .brython-heart-widget .CodeMirror {
+            height: 100% !important;
+            min-height: 300px;
+            width: 100%;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .brython-heart-widget .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        
+        .brython-heart-widget .button {
+            padding: 12px 24px;
+            font-size: 16px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 14px;
-            margin-right: 10px;
-        }
-        #run-code {
             background: #4CAF50;
             color: white;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 120px;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        #reset-code {
-            background: #f44336;
-            color: white;
+        
+        .brython-heart-widget .button:hover {
+            background: #45a049;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         }
-        .message {
+        
+        .brython-heart-widget .button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .brython-heart-widget h1 {
+            color: #333;
+            margin: 0;
+            font-size: 28px;
+        }
+        
+        .brython-heart-widget h2 {
+            color: #444;
+            margin: 0 0 15px 0;
+            font-size: 20px;
+        }
+        
+        .brython-heart-widget p {
+            color: #666;
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+        
+        .brython-heart-widget .message {
             margin-top: 10px;
             padding: 10px;
             border-radius: 4px;
         }
-        .message-success {
-            background: #e8f5e9;
-            color: #2e7d32;
-        }
-        .message-error {
+        
+        .brython-heart-widget .message.error {
             background: #ffebee;
             color: #c62828;
         }
-        .console {
-            margin-top: 20px;
-            padding: 10px;
-            background: #f5f5f5;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            height: 100px;
-            overflow-y: auto;
-            font-family: monospace;
-        }
-        .console-info {
-            color: #1976d2;
-        }
-        .console-success {
+        
+        .brython-heart-widget .message.success {
+            background: #e8f5e9;
             color: #2e7d32;
         }
-        .console-error {
-            color: #c62828;
+        
+        /* Responsive layout */
+        @media (max-width: 768px) {
+            .brython-heart-widget .content {
+                flex-direction: column;
+            }
+            
+            .brython-heart-widget .visualization,
+            .brython-heart-widget .editor-section {
+                width: 100%;
+            }
+            
+            .brython-heart-widget #canvas-container {
+                height: 300px;
+            }
+            
+            .brython-heart-widget .CodeMirror {
+                min-height: 200px;
+            }
+            
+            .brython-heart-widget .button {
+                padding: 10px 20px;
+                min-width: 100px;
+                font-size: 14px;
+            }
         }
     </style>
 </head>
-<body onload="brython({debug: 1})">
-    <div class="container">
-        <div class="header">
-            <h1>Python Learning Framework</h1>
-            <p>Learn programming concepts through interactive visualization</p>
-        </div>
-        
-        <div class="content">
-            <div class="visualization">
-                <h2>Interactive Visualization</h2>
-                <div id="canvas-container">
-                    <canvas id="animation-canvas" width="400" height="400"></canvas>
-                </div>
-                <div class="console" id="output-console"></div>
+<body>
+    <div id="heart-widget-container" class="brython-heart-widget">
+        <div class="container">
+            <div class="header">
+                <h1>Heart Animation Widget</h1>
+                <p>Interact with the heart by modifying its HP through Python code</p>
             </div>
             
-            <div class="editor-section">
-                <h2>Python Code Editor</h2>
-                <div class="editor-container">
-                    <textarea id="code-editor"></textarea>
+            <div class="content">
+                <div class="visualization">
+                    <h2>Heart Animation</h2>
+                    <div id="canvas-container">
+                        <canvas id="animation-canvas" width="400" height="400"></canvas>
+                    </div>
+                    <div class="controls">
+                        <button id="run-code" class="button">▶ Run Code</button>
+                        <button id="reset-code" class="button">↺ Reset</button>
+                    </div>
+                    <div class="console" id="output-console"></div>
                 </div>
-                <div class="controls">
-                    <button id="run-code" class="button">▶ Run Code</button>
-                    <button id="reset-code" class="button">↺ Reset</button>
+                
+                <div class="editor-section">
+                    <h2>Python Code Editor</h2>
+                    <div class="editor-container">
+                        <textarea id="code-editor"></textarea>
+                    </div>
+                    <div id="message" class="message"></div>
                 </div>
-                <div id="message" class="message"></div>
             </div>
         </div>
     </div>
 
+    <!-- Python script -->
     <script type="text/python">
 from browser import document, window, html, timer
 import math
 import random
 
-# Global state
-width = 400
-height = 400
-shapes = []
-window.shapes = shapes
-animation_frame = None
+def log(msg):
+    print(msg)
+    try:
+        output = document["output-console"]
+        output.innerHTML += f'<div class="console-info">{msg}</div>'
+        output.scrollTop = output.scrollHeight
+    except Exception as e:
+        print(f"Error logging: {e}")
 
-# Get canvas context
-canvas = document['animation-canvas']
-ctx = canvas.getContext('2d')
-
-class Shape:
-    def __init__(self, x=200, y=200, size=30, color="blue"):
-        self.x = x
-        self.y = y
-        self.size = size
-        self.color = color
-        self.speed_x = 0
-        self.speed_y = 0
-        
-    def update(self):
-        # Update position with larger values for visible movement
-        self.x += self.speed_x
-        self.y += self.speed_y
-        
-        # Add gravity (increased for more visible effect)
-        self.speed_y += 0.5
-        
-        # Bounce off walls with less energy loss
-        bounce_damping = 0.8
-        
-        if self.x - self.size/2 < 0:
-            self.x = self.size/2
-            self.speed_x = abs(self.speed_x) * bounce_damping
-        elif self.x + self.size/2 > width:
-            self.x = width - self.size/2
-            self.speed_x = -abs(self.speed_x) * bounce_damping
-            
-        if self.y - self.size/2 < 0:
-            self.y = self.size/2
-            self.speed_y = abs(self.speed_y) * bounce_damping
-        elif self.y + self.size/2 > height:
-            self.y = height - self.size/2
-            self.speed_y = -abs(self.speed_y) * bounce_damping
-    
-    def draw(self):
-        ctx.fillStyle = self.color
-        ctx.beginPath()
-        ctx.arc(self.x, self.y, self.size/2, 0, 2 * math.pi)
-        ctx.fill()
-
-def draw_circle(x, y, size, color):
-    shapes.append(Shape(x, y, size, color))
-
-def animation_loop(*args):
-    global animation_frame
-    # Clear canvas
-    ctx.fillStyle = '#F0F0F0'
-    ctx.fillRect(0, 0, width, height)
-    
-    # Update and draw shapes
-    for shape in shapes:
-        shape.update()
-        shape.draw()
-    
-    # Request next frame
-    animation_frame = timer.request_animation_frame(animation_loop)
-
-def init_framework():
-    global editor
-    
-    # Initialize CodeMirror
-    editor = window.CodeMirror.fromTextArea(
-        document.getElementById("code-editor"),
-        {
-            'mode': 'python',
-            'theme': 'monokai',
-            'lineNumbers': True,
-            'tabSize': 4,
-            'indentUnit': 4,
-            'indentWithTabs': False,
-            'autofocus': True
-        }
-    )
-    
-    def log_to_console(message, type="info"):
-        console = document.getElementById("output-console")
-        line = document.createElement('div')
-        line.classList.add(f'console-{type}')
-        line.textContent = message
-        console.appendChild(line)
-        console.scrollTop = console.scrollHeight
-    
-    def run_code(evt):
+class Heart:
+    def __init__(self, canvas):
         try:
-            # Clear existing shapes and console
-            shapes.clear()
-            console = document.getElementById("output-console")
-            console.innerHTML = ""
+            self.canvas = canvas
+            self.ctx = canvas.getContext('2d')
+            # Get the actual canvas dimensions
+            self.width = 400
+            self.height = 400
+            # Scale for high DPI displays
+            scale = window.devicePixelRatio if hasattr(window, 'devicePixelRatio') else 1
+            self.canvas.style.width = "400px"
+            self.canvas.style.height = "400px"
+            self.canvas.width = int(400 * scale)
+            self.canvas.height = int(400 * scale)
+            self.ctx.scale(scale, scale)
             
-            # Stop previous animation if running
-            if animation_frame:
-                timer.cancel_animation_frame(animation_frame)
+            # Store center point
+            self.center_x = self.width / 2
+            self.center_y = self.height / 2
             
-            # Create namespace with available functions and print
-            def print_override(*args):
-                log_to_console(" ".join(str(arg) for arg in args))
+            self.hp = 100
+            self.animation_frame = None
+            log(f"Heart initialized with canvas size: {self.width}x{self.height}, scale: {scale}")
+        except Exception as e:
+            log(f"Error initializing heart: {e}")
+    
+    def update(self, hp):
+        try:
+            self.hp = max(0, min(100, hp))
+            log(f"HP updated to: {self.hp}")
+        except Exception as e:
+            log(f"Error updating HP: {e}")
+        
+    def draw(self):
+        try:
+            # Clear canvas with full dimensions
+            self.ctx.clearRect(0, 0, self.canvas.width, self.canvas.height)
             
-            namespace = {
-                'width': width,
-                'height': height,
-                'draw_circle': draw_circle,
-                'Shape': Shape,
-                'shapes': shapes,
-                'print': print_override,
-                'random': random
-            }
+            # Save context
+            self.ctx.save()
             
-            # Execute user code
-            code = editor.getValue()
-            exec(code, namespace)
+            # Move to exact center
+            self.ctx.translate(self.center_x, self.center_y)
             
-            # Start animation loop immediately
-            animation_loop()
+            # Scale based on HP with fixed base size
+            base_scale = 0.4  # Reduced base scale for better fit
+            hp_scale = (self.hp / 100) * base_scale
+            self.ctx.scale(hp_scale, hp_scale)
             
-            # Show success message
-            msg = document['message']
-            msg.innerHTML = "Code executed successfully!"
-            msg.className = "message message-success"
-            log_to_console("Program running successfully!", "success")
+            # Draw heart with precise coordinates
+            self.ctx.beginPath()
+            
+            # Start at bottom point
+            self.ctx.moveTo(0, 200)
+            
+            # Left curve
+            self.ctx.bezierCurveTo(-200, 50, -200, -100, 0, -200)
+            
+            # Right curve
+            self.ctx.bezierCurveTo(200, -100, 200, 50, 0, 200)
+            
+            # Fill heart
+            self.ctx.fillStyle = "#ff4444"
+            self.ctx.fill()
+            
+            # Add HP text
+            self.ctx.fillStyle = "white"
+            self.ctx.font = "96px Arial"
+            self.ctx.textAlign = "center"
+            self.ctx.textBaseline = "middle"
+            self.ctx.fillText(f"{self.hp}%", 0, 0)
+            
+            # Restore context
+            self.ctx.restore()
             
         except Exception as e:
-            # Show error message
-            msg = document['message']
-            msg.innerHTML = f"Error: {str(e)}"
-            msg.className = "message message-error"
-            log_to_console(f"Error: {str(e)}", "error")
-            window.console.log(f"Error: {str(e)}")
-    
-    def reset_code(evt):
-        # Stop animation
-        if animation_frame:
-            timer.cancel_animation_frame(animation_frame)
-        
-        # Clear shapes and messages
-        shapes.clear()
-        document['message'].innerHTML = ""
-        document.getElementById("output-console").innerHTML = ""
-        
-        # Clear canvas
-        ctx.fillStyle = '#F0F0F0'
-        ctx.fillRect(0, 0, width, height)
-    
-    # Bind event handlers
-    document['run-code'].bind('click', run_code)
-    document['reset-code'].bind('click', reset_code)
-    
-    # Set initial example code with higher speeds
-    editor.setValue('''# Animation Example with Gravity!
-# Create a bouncing ball
-ball = Shape(200, 50, 30, "red")     # Start near top
-ball.speed_x = 5                      # Move right faster
-ball.speed_y = 0                      # Will fall with gravity
-shapes.append(ball)                   # Add to animation
+            log(f"Error drawing heart: {e}")
+            
+    def animate(self, timestamp):
+        try:
+            self.draw()
+            self.animation_frame = timer.request_animation_frame(self.animate)
+        except Exception as e:
+            log(f"Error in animation: {e}")
+            
+    def start(self):
+        try:
+            if self.animation_frame:
+                timer.cancel_animation_frame(self.animation_frame)
+            self.animate(0)
+            log("Animation started")
+        except Exception as e:
+            log(f"Error starting animation: {e}")
+            
+    def stop(self):
+        try:
+            if self.animation_frame:
+                timer.cancel_animation_frame(self.animation_frame)
+                self.animation_frame = None
+            log("Animation stopped")
+        except Exception as e:
+            log(f"Error stopping animation: {e}")
 
-# Create another bouncing ball
-ball2 = Shape(100, 100, 20, "blue")  # Different position
-ball2.speed_x = -4                   # Move left faster
-ball2.speed_y = -8                   # Move up initially
-shapes.append(ball2)                 # Add to animation''')
-    
-    print("Framework initialized successfully!")
-    log_to_console("Framework ready! Click Run to start the animation.", "success")
+def init():
+    try:
+        log("Starting initialization...")
+        
+        # Get canvas
+        canvas = document["animation-canvas"]
+        if not canvas:
+            log("Error: Canvas not found")
+            return
+            
+        # Create heart
+        heart = Heart(canvas)
+        
+        # Start animation
+        heart.start()
+        
+        # Store heart instance in window for access from editor
+        window.heart = heart
+        
+        # Setup run button
+        def run_code(evt):
+            try:
+                log("Running code...")
+                code = window.editor.getValue()
+                hp = heart.hp
+                namespace = {'hp': hp, 'random': random}
+                exec(code, namespace)
+                new_hp = namespace.get('hp', hp)
+                heart.update(new_hp)
+                log("Code execution complete")
+            except Exception as e:
+                log(f"Error running code: {e}")
+        
+        # Setup reset button
+        def reset(evt):
+            try:
+                heart.update(100)
+                document["output-console"].innerHTML = ""
+                log("Reset complete")
+            except Exception as e:
+                log(f"Error resetting: {e}")
+        
+        # Bind buttons
+        document["run-code"].bind("click", run_code)
+        document["reset-code"].bind("click", reset)
+        
+        log("Initialization complete")
+    except Exception as e:
+        log(f"Error in initialization: {e}")
 
-# Initialize framework when document is ready
-init_framework()
+# Start initialization when DOM is ready
+timer.set_timeout(init, 100)
     </script>
 </body>
 </html>
