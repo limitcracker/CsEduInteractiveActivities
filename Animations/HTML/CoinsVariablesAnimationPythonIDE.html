@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Coin Collection Game - Learn Variables</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .game-area {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .editor-area {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .canvas-container {
+            width: 600px;
+            height: 400px;
+            margin: 0 auto;
+            position: relative;
+            background-color: #fff;
+            border: 2px solid #333;
+            border-radius: 4px;
+        }
+        canvas {
+            display: block;
+        }
+        .CodeMirror {
+            height: 200px;
+            border: 2px solid #333;
+            border-radius: 4px;
+        }
+        .controls {
+            margin: 20px 0;
+            text-align: center;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .instructions {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="game-area">
+            <div class="instructions">
+                <h2>Learn Variables with Coin Collection!</h2>
+                <p>Try modifying these variables:</p>
+                <ul>
+                    <li><code>player_speed</code>: How fast the blue ball moves (default: 3)</li>
+                    <li><code>coin_size</code>: Size of the coins (default: 20)</li>
+                    <li><code>player_size</code>: Size of the blue ball (default: 25)</li>
+                </ul>
+            </div>
+            <div class="canvas-container">
+                <canvas id="gameCanvas" width="600" height="400"></canvas>
+            </div>
+            <div class="controls">
+                <button onclick="applyChanges()">Run Code</button>
+                <button onclick="resetGame()">Reset Game</button>
+            </div>
+        </div>
+        <div class="editor-area">
+            <textarea id="codeEditor"># Modify these variables to change the game
+player_speed = 3  # Speed of the blue ball
+coin_size = 20    # Size of the coins
+player_size = 25  # Size of the blue ball</textarea>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+
+    <script>
+        // Game variables
+        let gameVars = {
+            player_speed: 3,
+            coin_size: 20,
+            player_size: 25
+        };
+
+        // Game objects
+        let player = {
+            x: 300,
+            y: 200,
+            dx: 3,
+            dy: 3,
+            size: 25
+        };
+
+        let coins = [];
+        let score = 0;
+        let animationId = null;
+        let editor;
+
+        // Initialize game
+        function initGame() {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // Create coins
+            coins = [];
+            for (let i = 0; i < 5; i++) {
+                coins.push({
+                    x: Math.random() * (canvas.width - 40) + 20,
+                    y: Math.random() * (canvas.height - 40) + 20,
+                    size: gameVars.coin_size,
+                    collected: false
+                });
+            }
+
+            // Reset player
+            player.x = canvas.width / 2;
+            player.y = canvas.height / 2;
+            player.dx = gameVars.player_speed;
+            player.dy = gameVars.player_speed;
+            player.size = gameVars.player_size;
+
+            score = 0;
+        }
+
+        // Game loop
+        function gameLoop() {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Update player position
+            player.x += player.dx;
+            player.y += player.dy;
+
+            // Bounce off walls
+            if (player.x - player.size < 0 || player.x + player.size > canvas.width) {
+                player.dx *= -1;
+            }
+            if (player.y - player.size < 0 || player.y + player.size > canvas.height) {
+                player.dy *= -1;
+            }
+
+            // Draw player
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
+            ctx.fillStyle = 'blue';
+            ctx.fill();
+            ctx.strokeStyle = 'darkblue';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw coins and check collisions
+            coins.forEach(coin => {
+                if (!coin.collected) {
+                    // Draw coin
+                    ctx.beginPath();
+                    ctx.arc(coin.x, coin.y, coin.size / 2, 0, Math.PI * 2);
+                    ctx.fillStyle = 'gold';
+                    ctx.fill();
+                    ctx.strokeStyle = 'orange';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Draw $ symbol
+                    ctx.fillStyle = 'black';
+                    ctx.font = `${coin.size/2}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('$', coin.x, coin.y);
+
+                    // Check collision
+                    const dx = player.x - coin.x;
+                    const dy = player.y - coin.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < player.size + coin.size/2) {
+                        coin.collected = true;
+                        score++;
+                    }
+                }
+            });
+
+            // Draw score
+            ctx.fillStyle = 'black';
+            ctx.font = '20px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText(`Coins: ${score}`, 10, 30);
+
+            // Continue animation
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        // Initialize CodeMirror
+        window.onload = function() {
+            editor = CodeMirror.fromTextArea(document.getElementById("codeEditor"), {
+                mode: "python",
+                theme: "monokai",
+                lineNumbers: true,
+                indentUnit: 4,
+                autoCloseBrackets: true,
+                matchBrackets: true
+            });
+
+            // Start game
+            initGame();
+            gameLoop();
+        };
+
+        // Apply changes from editor
+        function applyChanges() {
+            const code = editor.getValue();
+            const lines = code.split('\n');
+            let changed = false;
+
+            lines.forEach(line => {
+                const match = line.match(/^\s*(player_speed|coin_size|player_size)\s*=\s*(\d+)/);
+                if (match) {
+                    const [_, varName, value] = match;
+                    const numValue = Number(value);
+                    if (!isNaN(numValue)) {
+                        gameVars[varName] = numValue;
+                        changed = true;
+                        
+                        // Apply changes immediately
+                        if (varName === 'player_speed') {
+                            const speedSign = Math.sign(player.dx);
+                            player.dx = numValue * speedSign;
+                            player.dy = numValue * Math.sign(player.dy);
+                        } else if (varName === 'player_size') {
+                            player.size = numValue;
+                        } else if (varName === 'coin_size') {
+                            coins.forEach(coin => {
+                                if (!coin.collected) {
+                                    coin.size = numValue;
+                                }
+                            });
+                        }
+                    }
+                }
+            });
+
+            if (changed) {
+                console.log('Updated game variables:', gameVars);
+            }
+        }
+
+        // Reset game
+        function resetGame() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+            initGame();
+            gameLoop();
+        }
+    </script>
+</body>
+</html> 
