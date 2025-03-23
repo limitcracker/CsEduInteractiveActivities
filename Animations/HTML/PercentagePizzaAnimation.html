@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pizza Percentage Animation</title>
+</head>
+<body>
+    <div id="pizza-percentage-widget" style="width: 100%; max-width: 800px; margin: 0 auto;">
+        <style>
+            #pizza-percentage-widget {
+                font-family: Arial, sans-serif;
+            }
+
+            #pizza-percentage-widget .pizza-percentage-container {
+                background-color: white;
+                padding: 20px;
+                border-radius: 10px;
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            }
+
+            #pizza-percentage-widget .pizza-percentage-canvas {
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                margin: 20px 0;
+                width: 100%;
+                height: auto;
+            }
+
+            #pizza-percentage-widget .pizza-percentage-controls {
+                display: flex;
+                gap: 10px;
+                margin-bottom: 20px;
+            }
+
+            #pizza-percentage-widget .pizza-percentage-btn {
+                padding: 8px 16px;
+                border: none;
+                border-radius: 5px;
+                color: white;
+                cursor: pointer;
+                transition: background-color 0.3s;
+            }
+
+            #pizza-percentage-widget .pizza-percentage-btn-add {
+                background-color: #4CAF50;
+            }
+
+            #pizza-percentage-widget .pizza-percentage-btn-add:hover {
+                background-color: #45a049;
+            }
+
+            #pizza-percentage-widget .pizza-percentage-btn-remove {
+                background-color: #f44336;
+            }
+
+            #pizza-percentage-widget .pizza-percentage-btn-remove:hover {
+                background-color: #da190b;
+            }
+
+            #pizza-percentage-widget .pizza-percentage-btn-reset {
+                background-color: #2196F3;
+            }
+
+            #pizza-percentage-widget .pizza-percentage-btn-reset:hover {
+                background-color: #1976D2;
+            }
+
+            #pizza-percentage-widget .pizza-percentage-stats {
+                display: flex;
+                gap: 20px;
+                margin-top: 20px;
+                font-size: 18px;
+            }
+
+            #pizza-percentage-widget .pizza-percentage-stat-box {
+                background-color: #f8f8f8;
+                padding: 10px;
+                border-radius: 5px;
+                min-width: 100px;
+            }
+        </style>
+
+        <div class="pizza-percentage-container">
+            <div class="pizza-percentage-controls">
+                <button class="pizza-percentage-btn pizza-percentage-btn-add" onclick="pizzaPercentageWidget.addSlice()">Add Slice</button>
+                <button class="pizza-percentage-btn pizza-percentage-btn-remove" onclick="pizzaPercentageWidget.removeSlice()">Remove Slice</button>
+                <button class="pizza-percentage-btn pizza-percentage-btn-reset" onclick="pizzaPercentageWidget.reset()">Reset</button>
+            </div>
+            <canvas id="pizza-percentage-canvas" class="pizza-percentage-canvas" width="800" height="400"></canvas>
+        </div>
+
+        <script>
+            const pizzaPercentageWidget = {
+                canvas: null,
+                ctx: null,
+                eatenSlices: 0,
+                totalSlices: 12,
+                centerX: 400,
+                centerY: 200,
+                radius: 150,
+                fractionX: 600,
+                fractionY: 200,
+                smallRadius: 20,
+                spacing: 50,
+
+                init() {
+                    this.canvas = document.getElementById('pizza-percentage-canvas');
+                    this.ctx = this.canvas.getContext('2d');
+                    
+                    this.resizeCanvas();
+                    window.addEventListener('resize', () => this.resizeCanvas());
+                    
+                    this.draw();
+                },
+
+                resizeCanvas() {
+                    const container = this.canvas.parentElement;
+                    const containerWidth = container.clientWidth;
+                    const scale = containerWidth / 800;
+                    this.canvas.style.width = containerWidth + 'px';
+                    this.canvas.style.height = (400 * scale) + 'px';
+                },
+
+                draw() {
+                    // Clear canvas
+                    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                    // Draw main pizza
+                    this.drawPizza();
+
+                    // Draw fraction representation
+                    this.drawFraction();
+                },
+
+                drawPizza() {
+                    // Draw pizza base
+                    this.ctx.beginPath();
+                    this.ctx.arc(this.centerX, this.centerY, this.radius, 0, Math.PI * 2);
+                    this.ctx.fillStyle = '#FFD700';
+                    this.ctx.fill();
+                    this.ctx.strokeStyle = '#B8860B';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.stroke();
+
+                    // Draw slices
+                    const sliceAngle = (Math.PI * 2) / this.totalSlices;
+                    for (let i = 0; i < this.totalSlices; i++) {
+                        const startAngle = i * sliceAngle;
+                        const endAngle = (i + 1) * sliceAngle;
+
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(this.centerX, this.centerY);
+                        this.ctx.arc(this.centerX, this.centerY, this.radius, startAngle, endAngle);
+                        this.ctx.closePath();
+
+                        if (i < this.eatenSlices) {
+                            this.ctx.fillStyle = '#FFA07A'; // Eaten slice color
+                        } else {
+                            this.ctx.fillStyle = '#FFD700'; // Uneaten slice color
+                        }
+                        this.ctx.fill();
+                        this.ctx.stroke();
+                    }
+
+                    // Draw slice lines
+                    this.ctx.strokeStyle = '#B8860B';
+                    this.ctx.lineWidth = 2;
+                    for (let i = 0; i <= this.totalSlices; i++) {
+                        const angle = i * sliceAngle;
+                        const x = this.centerX + Math.cos(angle) * this.radius;
+                        const y = this.centerY + Math.sin(angle) * this.radius;
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(this.centerX, this.centerY);
+                        this.ctx.lineTo(x, y);
+                        this.ctx.stroke();
+                    }
+
+                    // Draw percentage on top of pizza
+                    const percentage = (this.eatenSlices / this.totalSlices) * 100;
+                    this.ctx.fillStyle = '#000';
+                    this.ctx.font = 'bold 36px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText(`${percentage.toFixed(1)}%`, this.centerX, this.centerY - this.radius - 20);
+                },
+
+                drawFraction() {
+                    // Draw fraction line
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(this.fractionX - 30, this.fractionY);
+                    this.ctx.lineTo(this.fractionX + 30, this.fractionY);
+                    this.ctx.strokeStyle = '#000';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.stroke();
+
+                    // Draw numerator (eaten slices)
+                    for (let i = 0; i < this.eatenSlices; i++) {
+                        const x = this.fractionX - 20 + (i * 15);
+                        const y = this.fractionY - 30;
+                        this.drawSmallPizzaSlice(x, y, '#FFA07A');
+                    }
+
+                    // Draw denominator (total slices)
+                    for (let i = 0; i < this.totalSlices; i++) {
+                        const x = this.fractionX - 20 + (i * 15);
+                        const y = this.fractionY + 30;
+                        this.drawSmallPizzaSlice(x, y, '#FFD700');
+                    }
+
+                    // Draw fraction text
+                    this.ctx.fillStyle = '#000';
+                    this.ctx.font = '24px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText(`${this.eatenSlices}/${this.totalSlices}`, this.fractionX, this.fractionY + 80);
+                },
+
+                drawSmallPizzaSlice(x, y, color) {
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, this.smallRadius, 0, Math.PI * 2);
+                    this.ctx.fillStyle = color;
+                    this.ctx.fill();
+                    this.ctx.strokeStyle = '#B8860B';
+                    this.ctx.lineWidth = 1;
+                    this.ctx.stroke();
+                },
+
+                addSlice() {
+                    if (this.eatenSlices < this.totalSlices) {
+                        this.eatenSlices++;
+                        this.draw();
+                    }
+                },
+
+                removeSlice() {
+                    if (this.eatenSlices > 0) {
+                        this.eatenSlices--;
+                        this.draw();
+                    }
+                },
+
+                reset() {
+                    this.eatenSlices = 0;
+                    this.draw();
+                }
+            };
+
+            // Initialize the widget when the DOM is loaded
+            document.addEventListener('DOMContentLoaded', () => {
+                pizzaPercentageWidget.init();
+            });
+        </script>
+    </div>
+</body>
+</html> 
