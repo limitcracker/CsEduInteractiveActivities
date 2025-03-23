@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temperature Average Animation</title>
+</head>
+<body>
+    <div id="temp-average-widget" style="width: 100%; max-width: 800px; margin: 0 auto;">
+        <style>
+            #temp-average-widget {
+                font-family: Arial, sans-serif;
+            }
+
+            #temp-average-widget .container {
+                background-color: white;
+                padding: 20px;
+                border-radius: 10px;
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            }
+
+            #temp-average-widget canvas {
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                margin: 20px 0;
+                width: 100%;
+                height: auto;
+            }
+
+            #temp-average-widget .controls {
+                display: flex;
+                gap: 10px;
+                margin-bottom: 20px;
+            }
+
+            #temp-average-widget button {
+                padding: 8px 16px;
+                border: none;
+                border-radius: 5px;
+                color: white;
+                cursor: pointer;
+                transition: background-color 0.3s;
+            }
+
+            #temp-average-widget button#startBtn {
+                background-color: #4CAF50;
+            }
+
+            #temp-average-widget button#startBtn:hover {
+                background-color: #45a049;
+            }
+
+            #temp-average-widget button#pauseBtn {
+                background-color: #f44336;
+            }
+
+            #temp-average-widget button#pauseBtn:hover {
+                background-color: #da190b;
+            }
+
+            #temp-average-widget button#resetBtn {
+                background-color: #2196F3;
+            }
+
+            #temp-average-widget button#resetBtn:hover {
+                background-color: #1976D2;
+            }
+
+            #temp-average-widget .stats {
+                display: flex;
+                gap: 20px;
+                margin-top: 20px;
+                font-size: 18px;
+            }
+
+            #temp-average-widget .stat-box {
+                background-color: #f8f8f8;
+                padding: 10px;
+                border-radius: 5px;
+                min-width: 100px;
+            }
+        </style>
+
+        <div class="container">
+            <h1>Temperature Average Animation</h1>
+            <div class="controls">
+                <button id="startBtn" onclick="tempAverageWidget.startAnimation()">Start</button>
+                <button id="pauseBtn" onclick="tempAverageWidget.pauseAnimation()">Pause</button>
+                <button id="resetBtn" onclick="tempAverageWidget.resetAnimation()">Reset</button>
+            </div>
+            <canvas id="tempCanvas" width="800" height="400"></canvas>
+            <div class="stats">
+                <div class="stat-box">
+                    <div>Current Average: <span id="currentAvg">--</span>°C</div>
+                </div>
+                <div class="stat-box">
+                    <div>Number of Readings: <span id="numReadings">0</span></div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Create a self-contained widget object
+            const tempAverageWidget = {
+                canvas: null,
+                ctx: null,
+                currentAvg: null,
+                numReadings: null,
+                temperatures: [],
+                isAnimating: false,
+                animationId: null,
+                targetTemperatures: [],
+                maxReadings: 20,
+                boxWidth: 30,
+                boxHeight: 300,
+                padding: 20,
+                transitionSpeed: 0.02,
+
+                init() {
+                    this.canvas = document.getElementById('tempCanvas');
+                    this.ctx = this.canvas.getContext('2d');
+                    this.currentAvg = document.getElementById('currentAvg');
+                    this.numReadings = document.getElementById('numReadings');
+                    
+                    // Make canvas responsive
+                    this.resizeCanvas();
+                    window.addEventListener('resize', () => this.resizeCanvas());
+                    
+                    this.initializeTemperatures();
+                    this.draw();
+                },
+
+                resizeCanvas() {
+                    const container = this.canvas.parentElement;
+                    const containerWidth = container.clientWidth;
+                    const scale = containerWidth / 800;
+                    this.canvas.style.width = containerWidth + 'px';
+                    this.canvas.style.height = (400 * scale) + 'px';
+                },
+
+                initializeTemperatures() {
+                    this.temperatures = [];
+                    this.targetTemperatures = [];
+                    for (let i = 0; i < 10; i++) {
+                        this.temperatures.push(Math.random() * 100);
+                        this.targetTemperatures.push(Math.random() * 100);
+                    }
+                },
+
+                draw() {
+                    // Clear canvas
+                    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                    // Update number of readings display
+                    this.numReadings.textContent = this.temperatures.length;
+
+                    // Draw grid
+                    this.ctx.strokeStyle = '#eee';
+                    for (let i = 0; i <= 10; i++) {
+                        const y = this.padding + (this.boxHeight * (1 - i/10));
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(this.padding, y);
+                        this.ctx.lineTo(this.canvas.width - this.padding, y);
+                        this.ctx.stroke();
+                        this.ctx.fillStyle = '#666';
+                        this.ctx.fillText(`${i*10}°C`, 5, y + 5);
+                    }
+
+                    // Update and draw temperature boxes
+                    let allTransitionsComplete = true;
+                    this.temperatures.forEach((temp, index) => {
+                        // Smooth transition to target temperature
+                        const target = this.targetTemperatures[index];
+                        const diff = target - temp;
+                        if (Math.abs(diff) > 0.1) {
+                            this.temperatures[index] += diff * this.transitionSpeed;
+                            allTransitionsComplete = false;
+                        } else {
+                            this.temperatures[index] = target;
+                        }
+
+                        const x = this.padding + (index * (this.boxWidth + 10));
+                        const height = (temp / 100) * this.boxHeight;
+                        const y = this.padding + this.boxHeight - height;
+
+                        // Draw box
+                        this.ctx.fillStyle = '#4CAF50';
+                        this.ctx.fillRect(x, y, this.boxWidth, height);
+
+                        // Draw temperature value
+                        this.ctx.fillStyle = '#000';
+                        this.ctx.fillText(`${temp.toFixed(1)}°C`, x + 5, y - 5);
+                    });
+
+                    // Draw average line
+                    if (this.temperatures.length > 0) {
+                        const avg = this.temperatures.reduce((a, b) => a + b, 0) / this.temperatures.length;
+                        const avgHeight = (avg / 100) * this.boxHeight;
+                        const avgY = this.padding + this.boxHeight - avgHeight;
+
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(this.padding, avgY);
+                        this.ctx.lineTo(this.canvas.width - this.padding, avgY);
+                        this.ctx.strokeStyle = '#ff4444';
+                        this.ctx.lineWidth = 2;
+                        this.ctx.stroke();
+
+                        // Draw average value
+                        this.ctx.fillStyle = '#ff4444';
+                        const avgText = `Average: ${avg.toFixed(1)}°C`;
+                        const textWidth = this.ctx.measureText(avgText).width;
+                        this.ctx.fillText(avgText, this.canvas.width - this.padding - textWidth - 10, avgY - 5);
+                        this.currentAvg.textContent = avg.toFixed(1);
+                    }
+
+                    // If all transitions are complete, set new target temperatures
+                    if (allTransitionsComplete) {
+                        this.targetTemperatures = this.temperatures.map(() => Math.random() * 100);
+                    }
+                },
+
+                startAnimation() {
+                    if (!this.isAnimating) {
+                        this.isAnimating = true;
+                        this.animate();
+                    }
+                },
+
+                pauseAnimation() {
+                    this.isAnimating = false;
+                    if (this.animationId) {
+                        cancelAnimationFrame(this.animationId);
+                    }
+                },
+
+                resetAnimation() {
+                    this.pauseAnimation();
+                    this.initializeTemperatures();
+                    this.currentAvg.textContent = '--';
+                    this.numReadings.textContent = this.temperatures.length;
+                    this.draw();
+                },
+
+                animate() {
+                    if (this.isAnimating) {
+                        this.draw();
+                        this.animationId = requestAnimationFrame(() => this.animate());
+                    }
+                }
+            };
+
+            // Initialize the widget when the DOM is loaded
+            document.addEventListener('DOMContentLoaded', () => {
+                tempAverageWidget.init();
+            });
+        </script>
+    </div>
+</body>
+</html> 
