@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <style>
+        #operator-animation-container {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        #operator-animation-container h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 2rem;
+        }
+
+        #operator-animation-container .input-section {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        #operator-animation-container input[type="text"] {
+            flex: 1;
+            padding: 0.8rem;
+            font-size: 1rem;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        #operator-animation-container button {
+            padding: 0.8rem 1.5rem;
+            font-size: 1rem;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #operator-animation-container button:hover {
+            background-color: #2980b9;
+        }
+
+        #operator-animation-container button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        #operator-animation-container .animation-container {
+            margin: 2rem 0;
+            padding: 2rem;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            min-height: 100px;
+        }
+
+        #operator-animation-container #expression-display {
+            font-family: monospace;
+            font-size: 1.5rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background-color: white;
+            border-radius: 5px;
+            min-height: 60px;
+        }
+
+        #operator-animation-container .controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        #operator-animation-container .info-section {
+            margin-top: 2rem;
+            padding: 1rem;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        #operator-animation-container .info-section h2 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+
+        #operator-animation-container .info-section ul {
+            list-style-position: inside;
+        }
+
+        #operator-animation-container .info-section li {
+            margin-bottom: 0.5rem;
+            color: #666;
+        }
+
+        #operator-animation-container .highlight {
+            border: 2px solid #e74c3c;
+            border-radius: 5px;
+            padding: 0.2rem;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { border-color: #e74c3c; }
+            50% { border-color: #c0392b; }
+            100% { border-color: #e74c3c; }
+        }
+
+        #operator-animation-container .result {
+            color: #27ae60;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="operator-animation-container">
+        <h1>Python Operator Animation Simulator</h1>
+        <div class="input-section">
+            <input type="text" id="expression" placeholder="Enter Python expression (e.g., 2 + 3 * 4)">
+            <button id="startBtn">Start Animation</button>
+        </div>
+        <div class="animation-container">
+            <div id="expression-display"></div>
+            <div class="controls">
+                <button id="stepBtn" disabled>Next Step</button>
+                <button id="resetBtn" disabled>Reset</button>
+            </div>
+        </div>
+        <div class="info-section">
+            <h2>Operator Precedence (from highest to lowest)</h2>
+            <ul>
+                <li>Parentheses ()</li>
+                <li>Exponentiation **</li>
+                <li>Unary operators: +x, -x, ~x</li>
+                <li>Multiplication *, Division /, Floor Division //, Modulus %</li>
+                <li>Addition +, Subtraction -</li>
+                <li>Bitwise shifts <<, >></li>
+                <li>Bitwise AND &</li>
+                <li>Bitwise XOR ^</li>
+                <li>Bitwise OR |</li>
+                <li>Comparison operators ==, !=, >, <, >=, <=</li>
+                <li>Logical NOT not</li>
+                <li>Logical AND and</li>
+                <li>Logical OR or</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        class OperatorAnimation {
+            constructor() {
+                this.expression = '';
+                this.steps = [];
+                this.currentStep = 0;
+                this.operatorPrecedence = {
+                    '(': 11,
+                    ')': 11,
+                    '**': 10,
+                    '^': 10,  // Alternative for **
+                    '*': 9,
+                    '/': 9,
+                    '//': 9,
+                    'div': 9,  // Alternative for //
+                    'DIV': 9,  // Alternative for //
+                    '%': 9,
+                    'mod': 9,  // Alternative for %
+                    'MOD': 9,  // Alternative for %
+                    '+': 8,
+                    '-': 8,
+                    '<<': 7,
+                    '>>': 7,
+                    '&': 6,
+                    '^': 5,
+                    '|': 4,
+                    '==': 3,
+                    '=': 3,    // Alternative for ==
+                    '!=': 3,
+                    '<>': 3,   // Alternative for !=
+                    '>': 3,
+                    '<': 3,
+                    '>=': 3,
+                    '<=': 3,
+                    'not': 2,
+                    'όχι': 2,  // Greek alternative for not
+                    'ΌΧΙ': 2,  // Greek alternative for not
+                    'and': 1,
+                    'και': 1,  // Greek alternative for and
+                    'ΚΑΙ': 1,  // Greek alternative for and
+                    'or': 0,
+                    'ή': 0,    // Greek alternative for or
+                    'Ή': 0,    // Greek alternative for or
+                    'Η': 0     // Greek alternative for or
+                };
+
+                // Mapping of alternative operators to Python operators
+                this.operatorMapping = {
+                    '^': '**',
+                    'div': '//',
+                    'DIV': '//',
+                    'mod': '%',
+                    'MOD': '%',
+                    'όχι': 'not',
+                    'ΌΧΙ': 'not',
+                    'και': 'and',
+                    'ΚΑΙ': 'and',
+                    'ή': 'or',
+                    'Ή': 'or',
+                    'Η': 'or',
+                    '=': '==',    // Alternative for ==
+                    '<>': '!='    // Alternative for !=
+                };
+
+                // Mapping for boolean values
+                this.booleanMapping = {
+                    'true': 'ΑΛΗΘΗΣ',
+                    'false': 'ΨΕΥΔΗΣ',
+                    'True': 'ΑΛΗΘΗΣ',
+                    'False': 'ΨΕΥΔΗΣ',
+                    'ΑΛΗΘΗΣ': 'true',
+                    'ΨΕΥΔΗΣ': 'false'
+                };
+
+                this.initializeElements();
+                this.addEventListeners();
+            }
+
+            initializeElements() {
+                this.expressionInput = document.getElementById('expression');
+                this.expressionDisplay = document.getElementById('expression-display');
+                this.startBtn = document.getElementById('startBtn');
+                this.stepBtn = document.getElementById('stepBtn');
+                this.resetBtn = document.getElementById('resetBtn');
+            }
+
+            addEventListeners() {
+                this.startBtn.addEventListener('click', () => this.startAnimation());
+                this.stepBtn.addEventListener('click', () => this.nextStep());
+                this.resetBtn.addEventListener('click', () => this.reset());
+            }
+
+            startAnimation() {
+                const expression = this.expressionInput.value.trim();
+                if (!expression) return;
+                
+                this.expression = expression;
+                this.steps = this.generateSteps(expression);
+                this.currentStep = 0;
+                
+                this.startBtn.disabled = true;
+                this.stepBtn.disabled = false;
+                this.resetBtn.disabled = false;
+                
+                this.expressionDisplay.innerHTML = '';
+                this.displayStep(this.steps[0]);
+            }
+
+            generateSteps(expression) {
+                const tokens = this.tokenizeExpression(expression);
+                const steps = [];
+                let currentExpression = [...tokens];
+                
+                // Add initial expression as first step
+                steps.push({
+                    expression: [...currentExpression],
+                    highlight: [],
+                    result: undefined
+                });
+
+                while (currentExpression.length > 1) {
+                    const nextOperation = this.findNextOperation(currentExpression);
+                    if (!nextOperation) break;
+
+                    const { operator, leftIndex, rightIndex, isUnary } = nextOperation;
+                    let result;
+                    
+                    if (operator === 'remove_parenthesis') {
+                        // Remove the parentheses
+                        currentExpression.splice(leftIndex, rightIndex - leftIndex + 1, currentExpression[leftIndex + 1]);
+                        steps.push({
+                            expression: [...currentExpression],
+                            highlight: [leftIndex],
+                            result: currentExpression[leftIndex]
+                        });
+                        continue;
+                    }
+                    
+                    if (isUnary) {
+                        try {
+                            // Add the step before evaluating
+                            steps.push({
+                                expression: [...currentExpression],
+                                highlight: [leftIndex - 1, leftIndex],
+                                result: undefined
+                            });
+                            
+                            // Now evaluate the operation
+                            result = this.evaluateOperation(operator, null, currentExpression[leftIndex]);
+                            
+                            // Replace the operation with its result
+                            currentExpression.splice(leftIndex - 1, 2, result);
+                            
+                            // Add the result step
+                            steps.push({
+                                expression: [...currentExpression],
+                                highlight: [leftIndex - 1],
+                                result: result
+                            });
+                        } catch (error) {
+                            steps.push({
+                                expression: [...currentExpression],
+                                highlight: [leftIndex - 1, leftIndex],
+                                result: error.message
+                            });
+                            return steps;
+                        }
+                    } else {
+                        try {
+                            // Add the step before evaluating
+                            steps.push({
+                                expression: [...currentExpression],
+                                highlight: [leftIndex, rightIndex],
+                                result: undefined
+                            });
+                            
+                            // Now evaluate the operation
+                            result = this.evaluateOperation(
+                                operator,
+                                currentExpression[leftIndex],
+                                currentExpression[rightIndex]
+                            );
+                            
+                            // Replace the operation with its result
+                            currentExpression.splice(leftIndex, 3, result);
+                            
+                            // Add the result step
+                            steps.push({
+                                expression: [...currentExpression],
+                                highlight: [leftIndex],
+                                result: result
+                            });
+                            
+                        } catch (error) {
+                            steps.push({
+                                expression: [...currentExpression],
+                                highlight: [leftIndex, rightIndex],
+                                result: error.message
+                            });
+                            return steps;
+                        }
+                    }
+                }
+
+                return steps;
+            }
+
+            tokenizeExpression(expr) {
+                // First, handle special operators that need to be preserved
+                expr = expr.replace(/\*\*/g, ' ** ');  // Handle ** first
+                expr = expr.replace(/<>/g, ' <> ');    // Handle <> before < and >
+                expr = expr.replace(/<=/g, ' <= ');    // Handle <= before <
+                expr = expr.replace(/>=/g, ' >= ');    // Handle >= before >
+                expr = expr.replace(/==/g, ' == ');    // Handle == before =
+                expr = expr.replace(/!=/g, ' != ');    // Handle != before !
+                expr = expr.replace(/div/gi, ' div '); // Handle div case-insensitive
+                expr = expr.replace(/mod/gi, ' mod '); // Handle mod case-insensitive
+                
+                // Handle Greek operators
+                expr = expr.replace(/ΚΑΙ/g, ' ΚΑΙ ');
+                expr = expr.replace(/και/g, ' ΚΑΙ ');
+                expr = expr.replace(/Ή/g, ' Ή ');
+                expr = expr.replace(/ή/g, ' Ή ');
+                expr = expr.replace(/όχι/g, ' όχι ');
+                expr = expr.replace(/ΌΧΙ/g, ' όχι ');
+                
+                // Then handle single-character operators
+                expr = expr.replace(/([+\-*/()=<>])/g, ' $1 ');
+                
+                // Handle boolean values (both English and Greek)
+                expr = expr.replace(/\b(true|false|True|False|ΨΕΥΔΗΣ|ΑΛΗΘΗΣ)\b/gi, match => {
+                    // Convert to lowercase for consistency
+                    const lowerMatch = match.toLowerCase();
+                    if (lowerMatch === 'true' || lowerMatch === 'ψευδης') return ' ΑΛΗΘΗΣ ';
+                    if (lowerMatch === 'false' || lowerMatch === 'αληθης') return ' ΨΕΥΔΗΣ ';
+                    return ` ${match} `;
+                });
+                
+                // Split by spaces and filter out empty strings
+                return expr.split(/\s+/).filter(token => token.trim());
+            }
+
+            findNextOperation(tokens) {
+                let highestPrecedence = -1;
+                let operation = null;
+                let parenthesesCount = 0;
+
+                // First pass: find the deepest level of parentheses
+                let maxParenthesesCount = 0;
+                for (let i = 0; i < tokens.length; i++) {
+                    if (tokens[i] === '(') {
+                        parenthesesCount++;
+                        maxParenthesesCount = Math.max(maxParenthesesCount, parenthesesCount);
+                    } else if (tokens[i] === ')') {
+                        parenthesesCount--;
+                    }
+                }
+
+                // Reset parentheses count for second pass
+                parenthesesCount = 0;
+
+                // First find the highest precedence among all operators at the current parentheses level
+                for (let i = 0; i < tokens.length; i++) {
+                    const token = tokens[i];
+                    if (token === '(') {
+                        parenthesesCount++;
+                    } else if (token === ')') {
+                        parenthesesCount--;
+                    } else if (this.operatorPrecedence[token] !== undefined && parenthesesCount === maxParenthesesCount) {
+                        const precedence = this.operatorPrecedence[token];
+                        if (precedence > highestPrecedence) {
+                            highestPrecedence = precedence;
+                        }
+                    }
+                }
+
+                // Reset parentheses count for third pass
+                parenthesesCount = 0;
+
+                // Then find the leftmost operator with this precedence
+                for (let i = 0; i < tokens.length; i++) {
+                    const token = tokens[i];
+                    if (token === '(') {
+                        parenthesesCount++;
+                    } else if (token === ')') {
+                        parenthesesCount--;
+                    } else if (this.operatorPrecedence[token] !== undefined) {
+                        const precedence = this.operatorPrecedence[token];
+                        // Only consider operators at the deepest level of parentheses and with highest precedence
+                        if (precedence === highestPrecedence && parenthesesCount === maxParenthesesCount) {
+                            // Handle unary operators differently
+                            if (token === 'not' || token === 'όχι' || token === 'ΌΧΙ') {
+                                operation = {
+                                    operator: token,
+                                    leftIndex: i + 1,  // Only need the right operand
+                                    rightIndex: null,
+                                    isUnary: true
+                                };
+                                break;
+                            } else {
+                                // For binary operators, ensure we have valid operands
+                                if (i > 0 && i < tokens.length - 1) {
+                                    operation = {
+                                        operator: token,
+                                        leftIndex: i - 1,
+                                        rightIndex: i + 1,
+                                        isUnary: false
+                                    };
+                                    break;  // Take the first (leftmost) operator with highest precedence
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // If we found an operation, check if it's inside parentheses
+                if (operation) {
+                    let currentParenthesesCount = 0;
+                    for (let i = 0; i < operation.leftIndex; i++) {
+                        if (tokens[i] === '(') currentParenthesesCount++;
+                        if (tokens[i] === ')') currentParenthesesCount--;
+                    }
+                    operation.inParentheses = currentParenthesesCount > 0;
+                    return operation;
+                }
+
+                // If still no operation found, check if we have a single value in parentheses
+                if (tokens.length === 3 && tokens[0] === '(' && tokens[2] === ')') {
+                    operation = {
+                        operator: 'remove_parenthesis',
+                        leftIndex: 0,
+                        rightIndex: 2,
+                        isUnary: false
+                    };
+                    return operation;
+                }
+
+                // If still no operation found and we have a not operator with a single value
+                if (!operation && tokens.length === 2 && (tokens[0] === 'not' || tokens[0] === 'όχι' || tokens[0] === 'ΌΧΙ')) {
+                    operation = {
+                        operator: tokens[0],
+                        leftIndex: 1,
+                        rightIndex: null,
+                        isUnary: true
+                    };
+                    return operation;
+                }
+
+                // If we have a single value and a closing parenthesis, remove the parenthesis
+                if (!operation && tokens.length === 2 && tokens[1] === ')') {
+                    operation = {
+                        operator: 'remove_parenthesis',
+                        leftIndex: 0,
+                        rightIndex: 1,
+                        isUnary: false
+                    };
+                    return operation;
+                }
+
+                return operation;
+            }
+
+            evaluateOperation(operator, left, right) {
+                // Convert string numbers to actual numbers
+                if (typeof left === 'string' && !isNaN(left)) left = Number(left);
+                if (typeof right === 'string' && !isNaN(right)) right = Number(right);
+                
+                // Handle Greek boolean values
+                if (left === 'True' || left === 'ΑΛΗΘΗΣ') left = true;
+                if (left === 'False' || left === 'ΨΕΥΔΗΣ') left = false;
+                if (right === 'True' || right === 'ΑΛΗΘΗΣ') right = true;
+                if (right === 'False' || right === 'ΨΕΥΔΗΣ') right = false;
+                
+                let result;
+                switch (operator) {
+                    case '+':
+                        result = left + right;
+                        break;
+                    case '-':
+                        result = left - right;
+                        break;
+                    case '*':
+                        result = left * right;
+                        break;
+                    case '/':
+                        result = left / right;
+                        break;
+                    case '**':
+                    case '^':
+                        result = Math.pow(left, right);
+                        break;
+                    case '//':
+                    case 'div':
+                        result = Math.floor(left / right);
+                        break;
+                    case '%':
+                        result = left % right;
+                        break;
+                    case '==':
+                        result = left == right;
+                        break;
+                    case '!=':
+                        result = left != right;
+                        break;
+                    case '<':
+                        result = left < right;
+                        break;
+                    case '<=':
+                        result = left <= right;
+                        break;
+                    case '>':
+                        result = left > right;
+                        break;
+                    case '>=':
+                        result = left >= right;
+                        break;
+                    case 'ΚΑΙ':
+                    case 'and':
+                    case 'και':
+                        result = left && right;
+                        break;
+                    case 'Ή':
+                    case 'or':
+                    case 'ή':
+                        result = left || right;
+                        break;
+                    case 'όχι':
+                    case 'not':
+                    case 'ΌΧΙ':
+                        result = !right;
+                        break;
+                    default:
+                        throw new Error(`Unknown operator: ${operator}`);
+                }
+                
+                // Convert boolean results to Greek
+                if (result === true) return 'ΑΛΗΘΗΣ';
+                if (result === false) return 'ΨΕΥΔΗΣ';
+                return result;
+            }
+
+            nextStep() {
+                if (this.currentStep >= this.steps.length - 1) {
+                    this.stepBtn.disabled = true;
+                    return;
+                }
+                
+                this.currentStep++;
+                this.displayStep(this.steps[this.currentStep]);
+                
+                if (this.currentStep >= this.steps.length - 1) {
+                    this.stepBtn.disabled = true;
+                }
+            }
+
+            displayStep(step) {
+                if (!step) return;
+                
+                const display = document.createElement('div');
+                display.className = 'expression-step';
+                
+                let currentIndex = 0;
+                const [leftHighlight, rightHighlight] = step.highlight;
+                
+                while (currentIndex < step.expression.length) {
+                    if (currentIndex === leftHighlight) {
+                        // Create a container for the highlighted operation
+                        const operationContainer = document.createElement('span');
+                        operationContainer.className = 'highlight';
+                        
+                        // Add all three parts: left operand, operator, and right operand
+                        for (let i = 0; i < 3; i++) {
+                            if (i > 0) {
+                                operationContainer.appendChild(document.createTextNode(' '));
+                            }
+                            const part = document.createElement('span');
+                            let text = step.expression[currentIndex + i];
+                            // Convert boolean values to Greek
+                            if (text === 'True') text = 'ΑΛΗΘΗΣ';
+                            else if (text === 'False') text = 'ΨΕΥΔΗΣ';
+                            part.textContent = text;
+                            operationContainer.appendChild(part);
+                        }
+                        
+                        display.appendChild(operationContainer);
+                        currentIndex += 3;  // Skip past the entire operation
+                    } else {
+                        // Add non-highlighted tokens
+                        const span = document.createElement('span');
+                        let text = step.expression[currentIndex];
+                        // Convert boolean values to Greek
+                        if (text === 'True') text = 'ΑΛΗΘΗΣ';
+                        else if (text === 'False') text = 'ΨΕΥΔΗΣ';
+                        span.textContent = text;
+                        display.appendChild(span);
+                        display.appendChild(document.createTextNode(' '));
+                        currentIndex++;
+                    }
+                }
+                
+                if (step.result !== undefined) {
+                    const result = document.createElement('span');
+                    let resultText = step.result;
+                    // Convert boolean result to Greek
+                    if (resultText === 'True') resultText = 'ΑΛΗΘΗΣ';
+                    else if (resultText === 'False') resultText = 'ΨΕΥΔΗΣ';
+                    result.textContent = ` = ${resultText}`;
+                    result.className = 'result';
+                    display.appendChild(result);
+                }
+                
+                this.expressionDisplay.innerHTML = '';
+                this.expressionDisplay.appendChild(display);
+                this.expressionDisplay.scrollTop = this.expressionDisplay.scrollHeight;
+            }
+
+            reset() {
+                this.expression = '';
+                this.steps = [];
+                this.currentStep = 0;
+                
+                this.expressionDisplay.innerHTML = '';
+                this.expressionInput.value = '';
+                
+                this.startBtn.disabled = false;
+                this.stepBtn.disabled = true;
+                this.resetBtn.disabled = true;
+            }
+
+            evaluateExpression(tokens) {
+                if (tokens.length === 0) return null;
+                if (tokens.length === 1) return tokens[0];
+                
+                // Find the operator with the lowest precedence
+                let lowestPrecedence = Infinity;
+                let operatorIndex = -1;
+                
+                for (let i = 0; i < tokens.length; i++) {
+                    const token = tokens[i];
+                    const precedence = this.getPrecedence(token);
+                    if (precedence < lowestPrecedence) {
+                        lowestPrecedence = precedence;
+                        operatorIndex = i;
+                    }
+                }
+                
+                if (operatorIndex === -1) return tokens[0];
+                
+                const operator = tokens[operatorIndex];
+                const left = this.evaluateExpression(tokens.slice(0, operatorIndex));
+                const right = this.evaluateExpression(tokens.slice(operatorIndex + 1));
+                
+                return this.evaluateOperation(operator, left, right);
+            }
+            
+            getPrecedence(operator) {
+                switch (operator) {
+                    case '**':
+                    case '^':
+                        return 0;
+                    case '*':
+                    case '/':
+                    case '//':
+                    case 'div':
+                    case '%':
+                        return 1;
+                    case '+':
+                    case '-':
+                        return 2;
+                    case '<':
+                    case '<=':
+                    case '>':
+                    case '>=':
+                        return 3;
+                    case '==':
+                    case '!=':
+                        return 4;
+                    case 'ΚΑΙ':
+                    case 'and':
+                        return 5;
+                    case 'Ή':
+                    case 'or':
+                        return 6;
+                    default:
+                        return Infinity;
+                }
+            }
+        }
+
+        // Initialize the animation when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new OperatorAnimation();
+        });
+    </script>
+</body>
+</html> 
